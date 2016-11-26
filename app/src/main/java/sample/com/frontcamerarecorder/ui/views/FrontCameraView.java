@@ -5,6 +5,9 @@ package sample.com.frontcamerarecorder.ui.views;
  */
 
 import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.Rect;
 import android.hardware.Camera;
 import android.util.Log;
@@ -72,6 +75,7 @@ public class FrontCameraView extends SurfaceView implements SurfaceHolder.Callba
             Camera.Parameters parameters = mCamera.getParameters();
             parameters.setPreviewSize(mPreviewSize.width, mPreviewSize.height);
             mCamera.setParameters(parameters);
+            mCamera.setDisplayOrientation(90);
             mCamera.setPreviewDisplay(mHolder);
             mCamera.startPreview();
 
@@ -84,6 +88,7 @@ public class FrontCameraView extends SurfaceView implements SurfaceHolder.Callba
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         final int width = resolveSize(getSuggestedMinimumWidth(), widthMeasureSpec);
         final int height = resolveSize(getSuggestedMinimumHeight(), heightMeasureSpec);
+
 
         if (mSupportedPreviewSizes != null) {
             mPreviewSize = getOptimalPreviewSize(mSupportedPreviewSizes, width, height);
@@ -99,6 +104,8 @@ public class FrontCameraView extends SurfaceView implements SurfaceHolder.Callba
         setMeasuredDimension(measuredWidth,height);
         setTranslationX(-measuredWidth/4);
     }
+
+
 
     private Camera.Size getOptimalPreviewSize(List<Camera.Size> sizes, int w, int h) {
         final double ASPECT_TOLERANCE = 0.1;
