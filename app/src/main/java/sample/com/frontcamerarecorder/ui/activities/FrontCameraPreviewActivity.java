@@ -3,7 +3,6 @@ package sample.com.frontcamerarecorder.ui.activities;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.hardware.Camera;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
@@ -18,12 +17,11 @@ import android.widget.Toast;
 
 import java.io.File;
 
-import sample.com.frontcamerarecorder.Constants;
 import sample.com.frontcamerarecorder.R;
 import sample.com.frontcamerarecorder.controllers.CameraController;
 import sample.com.frontcamerarecorder.ui.views.FrontCameraSurfaceView;
 
-public class FrontCameraPreviewActivity extends AppCompatActivity {
+public class FrontCameraPreviewActivity extends AppCompatActivity implements CameraController.CameraRecordListener {
     public final static String TAG = "FrontCameraPreviewAct";
 
     private final static int CAMERA_PERMISSION_REQUEST_CODE = 50;
@@ -56,22 +54,7 @@ public class FrontCameraPreviewActivity extends AppCompatActivity {
 
             @Override
             public void onAnimationEnd(Animation animation) {
-                mCameraController.record(Constants.VIDEO_DURATION, new CameraController.CameraRecordListener() {
-                    @Override
-                    public void onSuccess(File file) {
-                        fab.setVisibility(View.GONE);
-                        mCameraController.release();
-                        Intent intent = new Intent(FrontCameraPreviewActivity.this, VideoPreviewActivity.class);
-                        intent.putExtra(VideoPreviewActivity.VIDEO_PATH, file.getAbsolutePath());
-                        startActivity(intent);
-                    }
-
-                    @Override
-                    public void onFailure() {
-                        // TODO : display an error view
-                        Toast.makeText(FrontCameraPreviewActivity.this, R.string.camera_not_available, Toast.LENGTH_SHORT).show();
-                    }
-                });
+                mCameraController.record();
             }
 
             @Override
@@ -131,6 +114,7 @@ public class FrontCameraPreviewActivity extends AppCompatActivity {
 
     private void initCamera() {
         mCameraController = new CameraController(this);
+        mCameraController.setCameraRecordListener(this);
         if (mCameraController.getCamera() == null) {
             Toast.makeText(this, R.string.camera_not_available, Toast.LENGTH_SHORT).show();
             // TODO : display an error view
@@ -141,4 +125,18 @@ public class FrontCameraPreviewActivity extends AppCompatActivity {
     }
 
 
+    @Override
+    public void onCameraRecordSuccess(File file) {
+        fab.setVisibility(View.GONE);
+        mCameraController.release();
+        Intent intent = new Intent(FrontCameraPreviewActivity.this, VideoPreviewActivity.class);
+        intent.putExtra(VideoPreviewActivity.VIDEO_PATH, file.getAbsolutePath());
+        startActivity(intent);
+    }
+
+    @Override
+    public void onCameraRecordFailure() {
+        // TODO : display an error view
+        Toast.makeText(FrontCameraPreviewActivity.this, R.string.camera_not_available, Toast.LENGTH_SHORT).show();
+    }
 }

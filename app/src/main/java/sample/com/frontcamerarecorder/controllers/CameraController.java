@@ -4,12 +4,15 @@ import android.content.Context;
 import android.hardware.Camera;
 import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
+import android.os.FileObserver;
 import android.util.Log;
 
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+
+import sample.com.frontcamerarecorder.Constants;
 
 import static android.provider.MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE;
 import static android.provider.MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO;
@@ -18,14 +21,15 @@ import static android.provider.MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO;
  * Created by Sylvain on 26/11/2016.
  */
 
-public class CameraController {
+public class CameraController implements VideoGenerator.VideoGeneratorListener {
     private final static String TAG = "CameraHelper";
 
-    public interface CameraRecordListener {
-        void onSuccess(File file);
-        void onFailure();
-    }
 
+    public interface CameraRecordListener {
+        void onCameraRecordSuccess(File file);
+        void onCameraRecordFailure();
+    }
+    private CameraRecordListener mCameraRecordListener;
     private Camera mCamera;
     private MediaRecorder mMediaRecorder;
     private boolean isRecording;
@@ -63,37 +67,79 @@ public class CameraController {
         isRecording = false;
     }
 
-    public void record(int duration,final CameraRecordListener handler){
+    public void setCameraRecordListener(CameraRecordListener cameraRecordListener){
+        this.mCameraRecordListener = cameraRecordListener;
+    }
+
+
+
+    class MyFileObserver extends FileObserver {
+        private File output;
+        public MyFileObserver (File output, int mask) {
+            super(output.getAbsolutePath(), mask);
+            this.output  = output;
+        }
+
+        public void onEvent(int event, String path) {
+           if(event == FileObserver.CLOSE_WRITE){
+               VideoGenerator generator = new VideoGenerator(mContext);
+               generator.fixMetaData(this.output,CameraController.this);
+           }
+        }
+    }
+
+    public void record(){
+
         final File output = getOutputMediaFile(MEDIA_TYPE_VIDEO);
         if (prepareVideoRecorder(output)) {
             // Camera is available and unlocked, MediaRecorder is prepared,
             // now you can start recording
-            mMediaRecorder.start();
+            mMediaRecorder.setOnInfoListener(new MediaRecorder.OnInfoListener() {
+                @Override
+                public void onInfo(MediaRecorder mr, int what, int extra) {
+                    if(what==MediaRecorder.MEDIA_RECORDER_INFO_MAX_DURATION_REACHED){
+                        if (isRecording) {
 
-            // inform the user that recording has started
-            isRecording = true;
-            new android.os.Handler().postDelayed(
-                    new Runnable() {
-                        public void run() {
-                            if (isRecording) {
-                                // stop recording and release camera
-                                mMediaRecorder.stop();  // stop the recording
-                                releaseMediaRecorder(); // release the MediaRecorder object
-                                mCamera.lock();         // take camera access back from MediaRecorder
-                                isRecording = false;
-                                handler.onSuccess(output);
-                            }
+                            MyFileObserver fb = new MyFileObserver(output, FileObserver.CLOSE_WRITE);
+                            fb.startWatching();
+
+                            // stop recording and release camera
+                            mMediaRecorder.stop();  // stop the recording
+                            releaseMediaRecorder(); // release the MediaRecorder object
+                            mCamera.lock();         // take camera access back from MediaRecorder
+                            isRecording = false;
                         }
-                    },
-                    duration);
+                    }else{
+                        if(mCameraRecordListener!=null){
+                            mCameraRecordListener.onCameraRecordFailure();
+                        }
+                    }
+                }
+            });
+            mMediaRecorder.start();
+            isRecording = true;
 
         } else {
-            // prepare didn't work, release the camera
             releaseMediaRecorder();
-            handler.onFailure();
-            // inform user
+            if(mCameraRecordListener!=null){
+                mCameraRecordListener.onCameraRecordFailure();
+            }
         }
 
+    }
+
+    @Override
+    public void onVideoGenerated(String message, File generatedFile) {
+        if(mCameraRecordListener!=null){
+            mCameraRecordListener.onCameraRecordSuccess(generatedFile);
+        }
+    }
+
+    @Override
+    public void onVideoGeneratedError(String message) {
+        if(mCameraRecordListener!=null){
+            mCameraRecordListener.onCameraRecordFailure();
+        }
     }
 
     public void release(){
@@ -114,7 +160,6 @@ public class CameraController {
 
         // Step 2: Set sources
         mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
-
         // Step 3: Set a CamcorderProfile (requires API Level 8 or higher)
         mMediaRecorder.setOutputFormat(profile.fileFormat);
         mMediaRecorder.setVideoEncoder(profile.videoCodec);
@@ -122,8 +167,11 @@ public class CameraController {
         mMediaRecorder.setVideoFrameRate(profile.videoFrameRate);
         mMediaRecorder.setVideoSize(profile.videoFrameWidth, profile.videoFrameHeight);
 
+
         // Step 4: Set output file
         mMediaRecorder.setOutputFile(output.toString());
+        // Set the duration
+        mMediaRecorder.setMaxDuration(Constants.VIDEO_DURATION);
 
         // Step 6: Prepare configured MediaRecorder
         try {

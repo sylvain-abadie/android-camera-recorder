@@ -5,19 +5,23 @@ package sample.com.frontcamerarecorder.ui.views;
  */
 
 import android.content.Context;
+import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.TextureView;
 
+import java.io.IOException;
 import java.util.List;
 
-/** A basic Camera preview class */
-public class FrontCameraSurfaceView extends SurfaceView implements SurfaceHolder.Callback {
+/**
+ * A basic Camera preview class
+ */
+public class FrontCameraSurfaceView extends TextureView implements TextureView.SurfaceTextureListener {
     private static final String TAG = "FrontCameraView";
 
     private Context mContext;
-    private SurfaceHolder mHolder;
     private Camera mCamera;
     private List<Camera.Size> mSupportedPreviewSizes;
     private Camera.Size mPreviewSize;
@@ -29,55 +33,10 @@ public class FrontCameraSurfaceView extends SurfaceView implements SurfaceHolder
 
         // supported preview sizes
         mSupportedPreviewSizes = mCamera.getParameters().getSupportedPreviewSizes();
-        for(Camera.Size str: mSupportedPreviewSizes)
+        for (Camera.Size str : mSupportedPreviewSizes)
             Log.e(TAG, str.width + "/" + str.height);
+        this.setSurfaceTextureListener(this);
 
-        // Install a SurfaceHolder.Callback so we get notified when the
-        // underlying surface is created and destroyed.
-        mHolder = getHolder();
-        mHolder.addCallback(this);
-        // deprecated setting, but required on Android versions prior to 3.0
-        mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-    }
-
-    public void surfaceCreated(SurfaceHolder holder) {
-        // empty. surfaceChanged will take care of stuff
-    }
-
-    public void surfaceDestroyed(SurfaceHolder holder) {
-        // empty. Take care of releasing the Camera preview in your activity.
-    }
-
-    public void surfaceChanged(SurfaceHolder holder, int format, int w, int h) {
-        Log.e(TAG, "surfaceChanged => w=" + w + ", h=" + h);
-        // If your preview can change or rotate, take care of those events here.
-        // Make sure to stop the preview before resizing or reformatting it.
-        if (mHolder.getSurface() == null){
-            // preview surface does not exist
-            return;
-        }
-
-        // stop preview before making changes
-        try {
-            mCamera.stopPreview();
-        } catch (Exception e){
-            // ignore: tried to stop a non-existent preview
-        }
-
-        // set preview size and make any resize, rotate or reformatting changes here
-        // start preview with new settings
-        try {
-
-            Camera.Parameters parameters = mCamera.getParameters();
-            parameters.setPreviewSize(mPreviewSize.width, mPreviewSize.height);
-            mCamera.setParameters(parameters);
-            mCamera.setDisplayOrientation(90);
-            mCamera.setPreviewDisplay(mHolder);
-            mCamera.startPreview();
-
-        } catch (Exception e){
-            Log.d(TAG, "Error starting camera preview: " + e.getMessage());
-        }
     }
 
     @Override
@@ -91,21 +50,20 @@ public class FrontCameraSurfaceView extends SurfaceView implements SurfaceHolder
         }
 
         float ratio;
-        if(mPreviewSize.height >= mPreviewSize.width)
+        if (mPreviewSize.height >= mPreviewSize.width)
             ratio = (float) mPreviewSize.height / (float) mPreviewSize.width;
         else
             ratio = (float) mPreviewSize.width / (float) mPreviewSize.height;
 
-        int measuredWidth = (int)(ratio*height);
-        setMeasuredDimension(measuredWidth,height);
-        setTranslationX(-measuredWidth/4);
+        int measuredWidth = (int) (ratio * height);
+        setMeasuredDimension(measuredWidth, height);
+        setTranslationX(-measuredWidth / 4);
     }
-
 
 
     private Camera.Size getOptimalPreviewSize(List<Camera.Size> sizes, int w, int h) {
         final double ASPECT_TOLERANCE = 0.1;
-        double targetRatio = (double)  h / w;
+        double targetRatio = (double) h / w;
 
         if (sizes == null)
             return null;
@@ -137,5 +95,43 @@ public class FrontCameraSurfaceView extends SurfaceView implements SurfaceHolder
         }
 
         return optimalSize;
+    }
+
+    @Override
+    public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+        // stop preview before making changes
+        try {
+            mCamera.stopPreview();
+        } catch (Exception e) {
+            // ignore: tried to stop a non-existent preview
+        }
+
+        try {
+            Camera.Parameters parameters = mCamera.getParameters();
+            parameters.setPreviewSize(mPreviewSize.width, mPreviewSize.height);
+            mCamera.setParameters(parameters);
+            mCamera.setDisplayOrientation(90);
+            mCamera.setPreviewTexture(surface);
+            mCamera.startPreview();
+
+        } catch (IOException ioe) {
+            Log.d(TAG, "Error");
+        }
+    }
+
+    @Override
+    public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
+
+    }
+
+    @Override
+    public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
+        // mCamera.stopPreview();
+        // mCamera.release();
+        return true;
+    }
+
+    @Override
+    public void onSurfaceTextureUpdated(SurfaceTexture surface) {
     }
 }

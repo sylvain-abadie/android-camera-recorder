@@ -3,12 +3,16 @@ package sample.com.frontcamerarecorder.ui.activities;
 
 import android.app.Activity;
 import android.content.res.AssetManager;
+import android.media.MediaMetadataRetriever;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.widget.FrameLayout;
 
 import sample.com.frontcamerarecorder.R;
 
@@ -16,6 +20,7 @@ public class VideoPreviewActivity extends Activity {
     public static final String TAG = "VideoPreviewActivity";
     public static final String VIDEO_PATH = "VIDEO_PATH";
     String mVideoPath = null;
+    float mVideoRatio;
 
     SurfaceView mSurfaceView1;
     SurfaceHolder mSurfaceHolder1;
@@ -43,6 +48,20 @@ public class VideoPreviewActivity extends Activity {
         // set up the Surface 1 video sink
         mSurfaceView1 = (SurfaceView) findViewById(R.id.surfaceview1);
         mSurfaceHolder1 = mSurfaceView1.getHolder();
+
+        MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+        retriever.setDataSource(mVideoPath);
+        int width = Integer.valueOf(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH));
+        int height = Integer.valueOf(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT));
+        mVideoRatio = (float) width / (float) height;
+        retriever.release();
+
+        DisplayMetrics metrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(metrics);
+        int widthToSet = (int) (metrics.heightPixels * mVideoRatio);
+        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(widthToSet, metrics.heightPixels);
+        params.gravity = Gravity.CENTER_HORIZONTAL;
+        mSurfaceView1.setLayoutParams(params);
 
         mSurfaceHolder1.addCallback(new SurfaceHolder.Callback() {
 
@@ -79,8 +98,8 @@ public class VideoPreviewActivity extends Activity {
             Surface s = mSurfaceHolder1.getSurface();
             Log.i("@@@", "setting surface " + s);
             setSurface(s);
-        }else{
-            mIsPlaying =true;
+        } else {
+            mIsPlaying = true;
             setPlayingStreamingMediaPlayer(true);
         }
     }
