@@ -1,6 +1,7 @@
 package sample.com.frontcamerarecorder.ui.activities;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.hardware.Camera;
 import android.os.Bundle;
@@ -20,16 +21,14 @@ import java.io.File;
 import sample.com.frontcamerarecorder.Constants;
 import sample.com.frontcamerarecorder.R;
 import sample.com.frontcamerarecorder.controllers.CameraController;
-import sample.com.frontcamerarecorder.controllers.CameraRecordListener;
-import sample.com.frontcamerarecorder.ui.views.FrontCameraView;
+import sample.com.frontcamerarecorder.ui.views.FrontCameraSurfaceView;
 
 public class FrontCameraPreviewActivity extends AppCompatActivity {
     public final static String TAG = "FrontCameraPreviewAct";
 
     private final static int CAMERA_PERMISSION_REQUEST_CODE = 50;
 
-    private Camera mCamera;
-    private FrontCameraView mPreview;
+    private FrontCameraSurfaceView mPreview;
     private FrameLayout mPreviewFrame;
     private FloatingActionButton fab;
     private Animation hideCameraFab;
@@ -57,11 +56,14 @@ public class FrontCameraPreviewActivity extends AppCompatActivity {
 
             @Override
             public void onAnimationEnd(Animation animation) {
-                mCameraController.record(Constants.VIDEO_DURATION, new CameraRecordListener() {
+                mCameraController.record(Constants.VIDEO_DURATION, new CameraController.CameraRecordListener() {
                     @Override
                     public void onSuccess(File file) {
+                        fab.setVisibility(View.GONE);
                         mCameraController.release();
-                        Toast.makeText(FrontCameraPreviewActivity.this, "success", Toast.LENGTH_SHORT).show();
+                        Intent intent = new Intent(FrontCameraPreviewActivity.this, VideoPreviewActivity.class);
+                        intent.putExtra(VideoPreviewActivity.VIDEO_PATH, file.getAbsolutePath());
+                        startActivity(intent);
                     }
 
                     @Override
@@ -84,8 +86,8 @@ public class FrontCameraPreviewActivity extends AppCompatActivity {
         // Hide the status bar.
         decorView.setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_FULLSCREEN |
-                View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
-                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                        View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
+                        View.SYSTEM_UI_FLAG_LAYOUT_STABLE
         );
 
 
@@ -122,7 +124,9 @@ public class FrontCameraPreviewActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        mCameraController.release();
+        if (mCameraController != null) {
+            mCameraController.release();
+        }
     }
 
     private void initCamera() {
@@ -131,7 +135,7 @@ public class FrontCameraPreviewActivity extends AppCompatActivity {
             Toast.makeText(this, R.string.camera_not_available, Toast.LENGTH_SHORT).show();
             // TODO : display an error view
         } else {
-            mPreview = new FrontCameraView(this, mCameraController.getCamera());
+            mPreview = new FrontCameraSurfaceView(this, mCameraController.getCamera());
             mPreviewFrame.addView(mPreview);
         }
     }

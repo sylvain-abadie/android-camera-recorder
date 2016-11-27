@@ -21,6 +21,11 @@ import static android.provider.MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO;
 public class CameraController {
     private final static String TAG = "CameraHelper";
 
+    public interface CameraRecordListener {
+        void onSuccess(File file);
+        void onFailure();
+    }
+
     private Camera mCamera;
     private MediaRecorder mMediaRecorder;
     private boolean isRecording;

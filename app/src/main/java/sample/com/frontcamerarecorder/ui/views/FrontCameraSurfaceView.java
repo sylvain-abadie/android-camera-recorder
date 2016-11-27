@@ -13,7 +13,7 @@ import android.view.SurfaceView;
 import java.util.List;
 
 /** A basic Camera preview class */
-public class FrontCameraView extends SurfaceView implements SurfaceHolder.Callback {
+public class FrontCameraSurfaceView extends SurfaceView implements SurfaceHolder.Callback {
     private static final String TAG = "FrontCameraView";
 
     private Context mContext;
@@ -22,7 +22,7 @@ public class FrontCameraView extends SurfaceView implements SurfaceHolder.Callba
     private List<Camera.Size> mSupportedPreviewSizes;
     private Camera.Size mPreviewSize;
 
-    public FrontCameraView(Context context, Camera camera) {
+    public FrontCameraSurfaceView(Context context, Camera camera) {
         super(context);
         mContext = context;
         mCamera = camera;
