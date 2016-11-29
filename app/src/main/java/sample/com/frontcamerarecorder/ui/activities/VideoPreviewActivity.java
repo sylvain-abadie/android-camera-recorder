@@ -2,9 +2,11 @@
 package sample.com.frontcamerarecorder.ui.activities;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.content.res.AssetManager;
 import android.media.MediaMetadataRetriever;
 import android.os.Bundle;
+import android.support.design.widget.FloatingActionButton;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
@@ -19,11 +21,13 @@ import sample.com.frontcamerarecorder.R;
 public class VideoPreviewActivity extends Activity {
     public static final String TAG = "VideoPreviewActivity";
     public static final String VIDEO_PATH = "VIDEO_PATH";
-    String mVideoPath = null;
+
+    String mVideoPath;
     float mVideoRatio;
 
     SurfaceView mSurfaceView1;
     SurfaceHolder mSurfaceHolder1;
+    FloatingActionButton mFabShareVideo;
 
     boolean mCreated = false;
     boolean mIsPlaying = false;
@@ -45,10 +49,9 @@ public class VideoPreviewActivity extends Activity {
                         View.SYSTEM_UI_FLAG_LAYOUT_STABLE
         );
 
-        // set up the Surface 1 video sink
-        mSurfaceView1 = (SurfaceView) findViewById(R.id.surfaceview1);
-        mSurfaceHolder1 = mSurfaceView1.getHolder();
+        mSurfaceView1 = (SurfaceView) findViewById(R.id.sf_video_preview);
 
+        mSurfaceHolder1 = mSurfaceView1.getHolder();
         MediaMetadataRetriever retriever = new MediaMetadataRetriever();
         retriever.setDataSource(mVideoPath);
         int width = Integer.valueOf(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH));
@@ -59,6 +62,7 @@ public class VideoPreviewActivity extends Activity {
         DisplayMetrics metrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(metrics);
         int widthToSet = (int) (metrics.heightPixels * mVideoRatio);
+
         FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(widthToSet, metrics.heightPixels);
         params.gravity = Gravity.CENTER_HORIZONTAL;
         mSurfaceView1.setLayoutParams(params);
@@ -90,6 +94,17 @@ public class VideoPreviewActivity extends Activity {
 
         });
 
+        mFabShareVideo = (FloatingActionButton) findViewById(R.id.btn_share);
+        mFabShareVideo.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent shareIntent = new Intent();
+                shareIntent.setAction(Intent.ACTION_SEND);
+                shareIntent.putExtra(Intent.EXTRA_STREAM, mVideoPath);
+                shareIntent.setType("video/mp4");
+                startActivity(Intent.createChooser(shareIntent, getResources().getText(R.string.send_to)));
+            }
+        });
 
     }
 

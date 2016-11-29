@@ -9,19 +9,22 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.FrameLayout;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import java.io.File;
 
 import sample.com.frontcamerarecorder.R;
 import sample.com.frontcamerarecorder.controllers.CameraController;
+import sample.com.frontcamerarecorder.controllers.VideoGenerator;
 import sample.com.frontcamerarecorder.ui.views.FrontCameraSurfaceView;
 
-public class FrontCameraPreviewActivity extends AppCompatActivity implements CameraController.CameraRecordListener {
+public class FrontCameraPreviewActivity extends AppCompatActivity implements CameraController.CameraRecordListener, VideoGenerator.VideoGeneratorListener {
     public final static String TAG = "FrontCameraPreviewAct";
 
     private final static int CAMERA_PERMISSION_REQUEST_CODE = 50;
@@ -31,6 +34,7 @@ public class FrontCameraPreviewActivity extends AppCompatActivity implements Cam
     private FloatingActionButton fab;
     private Animation hideCameraFab;
     private CameraController mCameraController;
+    private ProgressBar mPbProcessing;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,8 +66,8 @@ public class FrontCameraPreviewActivity extends AppCompatActivity implements Cam
 
             }
         });
-
-        mPreviewFrame = (FrameLayout) findViewById(R.id.camera_preview);
+        mPbProcessing = (ProgressBar) findViewById(R.id.pb_processing);
+        mPreviewFrame = (FrameLayout) findViewById(R.id.fl_camera_preview);
 
         View decorView = getWindow().getDecorView();
         // Hide the status bar.
@@ -96,12 +100,13 @@ public class FrontCameraPreviewActivity extends AppCompatActivity implements Cam
 
     @Override
     protected void onResume() {
-        super.onResume();
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, CAMERA_PERMISSION_REQUEST_CODE);
         } else {
             initCamera();
         }
+        super.onResume();
+
     }
 
     @Override
@@ -109,34 +114,63 @@ public class FrontCameraPreviewActivity extends AppCompatActivity implements Cam
         super.onPause();
         if (mCameraController != null) {
             mCameraController.release();
+            mCameraController = null;
         }
     }
 
     private void initCamera() {
-        mCameraController = new CameraController(this);
-        mCameraController.setCameraRecordListener(this);
-        if (mCameraController.getCamera() == null) {
-            Toast.makeText(this, R.string.camera_not_available, Toast.LENGTH_SHORT).show();
-            // TODO : display an error view
-        } else {
-            mPreview = new FrontCameraSurfaceView(this, mCameraController.getCamera());
-            mPreviewFrame.addView(mPreview);
+        if (mCameraController == null) {
+            mCameraController = new CameraController(this);
+            mCameraController.setCameraRecordListener(this);
+
+            if (mCameraController.getCamera() == null) {
+                Toast.makeText(this, R.string.camera_not_available, Toast.LENGTH_SHORT).show();
+                // TODO : display an error view
+            } else if(mPreview==null) {
+                mPreview = new FrontCameraSurfaceView(this, mCameraController.getCamera());
+                mPreviewFrame.addView(mPreview);
+            }else{
+                // handle the onResume after background properly
+                mPreview.setCamera(mCameraController.getCamera());
+            }
+        }else{
+            mCameraController.getCamera();
         }
     }
 
 
     @Override
     public void onCameraRecordSuccess(File file) {
-        fab.setVisibility(View.GONE);
-        mCameraController.release();
-        Intent intent = new Intent(FrontCameraPreviewActivity.this, VideoPreviewActivity.class);
-        intent.putExtra(VideoPreviewActivity.VIDEO_PATH, file.getAbsolutePath());
-        startActivity(intent);
+        Log.d(TAG,"onCameraRecordSucess");
+        this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                fab.setVisibility(View.GONE);
+                mCameraController.release();
+                mPreviewFrame.removeAllViews();
+                mCameraController=null;
+                mPbProcessing.setVisibility(View.VISIBLE);
+            }
+        });
+        VideoGenerator generator = new VideoGenerator(this.getApplication());
+        generator.convert(file,this);
     }
 
     @Override
     public void onCameraRecordFailure() {
         // TODO : display an error view
         Toast.makeText(FrontCameraPreviewActivity.this, R.string.camera_not_available, Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onVideoGenerated(String message, File generatedFile) {
+        Intent intent = new Intent(FrontCameraPreviewActivity.this, VideoPreviewActivity.class);
+        intent.putExtra(VideoPreviewActivity.VIDEO_PATH, generatedFile.getAbsolutePath());
+        startActivity(intent);
+    }
+
+    @Override
+    public void onVideoGeneratedError(String message) {
+
     }
 }

@@ -6,7 +6,8 @@ package sample.com.frontcamerarecorder;
 
 public class Constants {
 
-    public final static double PREVIEW_ASPECT_RATIO = 0.2; // 1:5
+    public final static double VIDEO_ASPECT_RATIO = 0.2; // 1:5
     public final static int VIDEO_DURATION = 3000;
+    public final static String VIDEO_TEMP_NAME = "VID_TEMP.mp4";
 
 }

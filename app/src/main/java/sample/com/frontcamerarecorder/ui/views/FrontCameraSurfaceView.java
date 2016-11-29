@@ -44,7 +44,6 @@ public class FrontCameraSurfaceView extends TextureView implements TextureView.S
         final int width = resolveSize(getSuggestedMinimumWidth(), widthMeasureSpec);
         final int height = resolveSize(getSuggestedMinimumHeight(), heightMeasureSpec);
 
-
         if (mSupportedPreviewSizes != null) {
             mPreviewSize = getOptimalPreviewSize(mSupportedPreviewSizes, width, height);
         }
@@ -133,5 +132,9 @@ public class FrontCameraSurfaceView extends TextureView implements TextureView.S
 
     @Override
     public void onSurfaceTextureUpdated(SurfaceTexture surface) {
+    }
+
+    public void setCamera(Camera camera) {
+        this.mCamera = camera;
     }
 }

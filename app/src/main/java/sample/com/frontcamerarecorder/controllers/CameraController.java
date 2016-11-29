@@ -21,7 +21,7 @@ import static android.provider.MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO;
  * Created by Sylvain on 26/11/2016.
  */
 
-public class CameraController implements VideoGenerator.VideoGeneratorListener {
+public class CameraController {
     private final static String TAG = "CameraHelper";
 
 
@@ -29,6 +29,7 @@ public class CameraController implements VideoGenerator.VideoGeneratorListener {
         void onCameraRecordSuccess(File file);
         void onCameraRecordFailure();
     }
+
     private CameraRecordListener mCameraRecordListener;
     private Camera mCamera;
     private MediaRecorder mMediaRecorder;
@@ -71,26 +72,25 @@ public class CameraController implements VideoGenerator.VideoGeneratorListener {
         this.mCameraRecordListener = cameraRecordListener;
     }
 
-
-
-    class MyFileObserver extends FileObserver {
+    class RecordedFileObserver extends FileObserver {
         private File output;
-        public MyFileObserver (File output, int mask) {
+        public RecordedFileObserver(File output, int mask) {
             super(output.getAbsolutePath(), mask);
             this.output  = output;
         }
 
         public void onEvent(int event, String path) {
-           if(event == FileObserver.CLOSE_WRITE){
-               VideoGenerator generator = new VideoGenerator(mContext);
-               generator.fixMetaData(this.output,CameraController.this);
-           }
+            if(event == FileObserver.CLOSE_WRITE){
+             if(mCameraRecordListener!=null){
+                 mCameraRecordListener.onCameraRecordSuccess(output);
+             }
+            }
         }
     }
 
     public void record(){
 
-        final File output = getOutputMediaFile(MEDIA_TYPE_VIDEO);
+        final File output = getOutputMediaFile();
         if (prepareVideoRecorder(output)) {
             // Camera is available and unlocked, MediaRecorder is prepared,
             // now you can start recording
@@ -100,7 +100,7 @@ public class CameraController implements VideoGenerator.VideoGeneratorListener {
                     if(what==MediaRecorder.MEDIA_RECORDER_INFO_MAX_DURATION_REACHED){
                         if (isRecording) {
 
-                            MyFileObserver fb = new MyFileObserver(output, FileObserver.CLOSE_WRITE);
+                            RecordedFileObserver fb = new RecordedFileObserver(output, FileObserver.CLOSE_WRITE);
                             fb.startWatching();
 
                             // stop recording and release camera
@@ -128,20 +128,6 @@ public class CameraController implements VideoGenerator.VideoGeneratorListener {
 
     }
 
-    @Override
-    public void onVideoGenerated(String message, File generatedFile) {
-        if(mCameraRecordListener!=null){
-            mCameraRecordListener.onCameraRecordSuccess(generatedFile);
-        }
-    }
-
-    @Override
-    public void onVideoGeneratedError(String message) {
-        if(mCameraRecordListener!=null){
-            mCameraRecordListener.onCameraRecordFailure();
-        }
-    }
-
     public void release(){
         this.releaseMediaRecorder();
         this.releaseCamera();
@@ -157,7 +143,6 @@ public class CameraController implements VideoGenerator.VideoGeneratorListener {
         // Step 1: Unlock and set camera to MediaRecorder
         mCamera.unlock();
         mMediaRecorder.setCamera(mCamera);
-
         // Step 2: Set sources
         mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
         // Step 3: Set a CamcorderProfile (requires API Level 8 or higher)
@@ -166,7 +151,6 @@ public class CameraController implements VideoGenerator.VideoGeneratorListener {
         mMediaRecorder.setVideoEncodingBitRate(profile.videoBitRate);
         mMediaRecorder.setVideoFrameRate(profile.videoFrameRate);
         mMediaRecorder.setVideoSize(profile.videoFrameWidth, profile.videoFrameHeight);
-
 
         // Step 4: Set output file
         mMediaRecorder.setOutputFile(output.toString());
@@ -204,25 +188,8 @@ public class CameraController implements VideoGenerator.VideoGeneratorListener {
         }
     }
 
-    /**
-     * Create a File for saving an image or video
-     */
-    private File getOutputMediaFile(int type) {
-
-        // Create a media file name
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        File mediaFile;
-        if (type == MEDIA_TYPE_IMAGE) {
-            mediaFile = new File(mContext.getFilesDir().getPath() + File.separator +
-                    "IMG_" + timeStamp + ".jpg");
-        } else if (type == MEDIA_TYPE_VIDEO) {
-            mediaFile = new File(mContext.getFilesDir().getPath() + File.separator +
-                    "VID_" + timeStamp + ".mp4");
-        } else {
-            return null;
-        }
-
-        return mediaFile;
+    private File getOutputMediaFile() {
+        return new File(mContext.getFilesDir().getPath() + File.separator + Constants.VIDEO_TEMP_NAME);
     }
 
 

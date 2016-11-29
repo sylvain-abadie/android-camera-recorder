@@ -29,7 +29,7 @@ public class ClippingView extends View {
         super.draw(canvas);
         int width = getWidth();
         int height = getHeight();
-        int desiredWidth = (int) (height * Constants.PREVIEW_ASPECT_RATIO);
+        int desiredWidth = (int) (height * Constants.VIDEO_ASPECT_RATIO);
         desiredWidth /= 2;
 
         rect1.set(
