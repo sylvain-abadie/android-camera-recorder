@@ -127,7 +127,7 @@ public class FrontCameraPreviewActivity extends AppCompatActivity implements Cam
                 Toast.makeText(this, R.string.camera_not_available, Toast.LENGTH_SHORT).show();
                 // TODO : display an error view
             } else if(mPreview==null) {
-                mPreview = new FrontCameraSurfaceView(this, mCameraController.getCamera());
+                mPreview = new FrontCameraSurfaceView(this, mCameraController.getCamera(), CameraController.getFrontCameraInfo());
                 mPreviewFrame.addView(mPreview);
             }else{
                 // handle the onResume after background properly

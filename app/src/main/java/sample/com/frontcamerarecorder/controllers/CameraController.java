@@ -9,13 +9,8 @@ import android.util.Log;
 
 import java.io.File;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
 import sample.com.frontcamerarecorder.Constants;
-
-import static android.provider.MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE;
-import static android.provider.MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO;
 
 /**
  * Created by Sylvain on 26/11/2016.
@@ -38,7 +33,7 @@ public class CameraController {
 
     private static Camera GetFrontCameraInstance() {
         Camera c = null;
-        int cameraId = GetCameraId();
+        int cameraId = GetFrontCameraId();
         try {
             c = Camera.open(cameraId);
         } catch (Exception e) {
@@ -48,7 +43,7 @@ public class CameraController {
         return c; // returns null if camera is unavailable
     }
 
-    private static int GetCameraId() {
+    private static int GetFrontCameraId() {
         Camera.CameraInfo info = new Camera.CameraInfo();
         int count = Camera.getNumberOfCameras();
 
@@ -61,6 +56,18 @@ public class CameraController {
         return -1;
     }
 
+    public static Camera.CameraInfo getFrontCameraInfo(){
+        Camera.CameraInfo info = new Camera.CameraInfo();
+        int count = Camera.getNumberOfCameras();
+
+        for (int i = 0; i < count; i++) {
+            Camera.getCameraInfo(i, info);
+            if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+                return info;
+            }
+        }
+        return info;
+    }
 
     public CameraController(Context ctx){
         this.mContext = ctx;
@@ -138,7 +145,7 @@ public class CameraController {
         mMediaRecorder = new MediaRecorder();
 
         // store the quality profile required
-        CamcorderProfile profile = CamcorderProfile.get(CameraController.GetCameraId(), CamcorderProfile.QUALITY_HIGH);
+        CamcorderProfile profile = CamcorderProfile.get(CameraController.GetFrontCameraId(), CamcorderProfile.QUALITY_HIGH);
 
         // Step 1: Unlock and set camera to MediaRecorder
         mCamera.unlock();
