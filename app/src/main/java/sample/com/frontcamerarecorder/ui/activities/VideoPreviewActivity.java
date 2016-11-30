@@ -5,10 +5,13 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.res.AssetManager;
 import android.media.MediaMetadataRetriever;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.content.FileProvider;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.Size;
 import android.view.Gravity;
 import android.view.Surface;
 import android.view.SurfaceHolder;
@@ -16,11 +19,14 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.widget.FrameLayout;
 
+import java.io.File;
+
 import sample.com.frontcamerarecorder.R;
 
 public class VideoPreviewActivity extends Activity {
     public static final String TAG = "VideoPreviewActivity";
     public static final String VIDEO_PATH = "VIDEO_PATH";
+    public static final String VIDEO_MIME_TYPE = "video/*";
 
     String mVideoPath;
     float mVideoRatio;
@@ -52,12 +58,9 @@ public class VideoPreviewActivity extends Activity {
         mSurfaceView1 = (SurfaceView) findViewById(R.id.sf_video_preview);
 
         mSurfaceHolder1 = mSurfaceView1.getHolder();
-        MediaMetadataRetriever retriever = new MediaMetadataRetriever();
-        retriever.setDataSource(mVideoPath);
-        int width = Integer.valueOf(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH));
-        int height = Integer.valueOf(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT));
-        mVideoRatio = (float) width / (float) height;
-        retriever.release();
+
+        Size videoSize = getVideoSize(mVideoPath);
+        mVideoRatio = (float) videoSize.getWidth() / (float) videoSize.getHeight();
 
         DisplayMetrics metrics = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(metrics);
@@ -98,14 +101,30 @@ public class VideoPreviewActivity extends Activity {
         mFabShareVideo.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                mIsPlaying = false;
+                setPlayingStreamingMediaPlayer(mIsPlaying);
+                File video = new File(mVideoPath);
+                Uri contentUri = FileProvider.getUriForFile(VideoPreviewActivity.this, "sample.com.fileprovider", video);
                 Intent shareIntent = new Intent();
                 shareIntent.setAction(Intent.ACTION_SEND);
-                shareIntent.putExtra(Intent.EXTRA_STREAM, mVideoPath);
-                shareIntent.setType("video/mp4");
+                shareIntent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                shareIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, getString(R.string.subject));
+                shareIntent.putExtra(android.content.Intent.EXTRA_TEXT, getString(R.string.description));
+                shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
+                shareIntent.setType(VIDEO_MIME_TYPE);
                 startActivity(Intent.createChooser(shareIntent, getResources().getText(R.string.send_to)));
             }
         });
 
+    }
+
+    private Size getVideoSize(String videoSource) {
+        MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+        retriever.setDataSource(videoSource);
+        int width = Integer.valueOf(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH));
+        int height = Integer.valueOf(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT));
+        retriever.release();
+        return new Size(width,height);
     }
 
     void create() {

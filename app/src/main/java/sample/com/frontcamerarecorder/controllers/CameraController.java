@@ -17,7 +17,7 @@ import sample.com.frontcamerarecorder.Constants;
  */
 
 public class CameraController {
-    private final static String TAG = "CameraHelper";
+    private final static String TAG = "CameraController";
 
 
     public interface CameraRecordListener {

@@ -158,7 +158,7 @@ public class VideoGenerator {
 
         final String filesDirPath = this.mContext.getFilesDir().getAbsolutePath();
 
-        File tempDir = new File(filesDirPath + File.separator + "tpm");
+        File tempDir = new File(filesDirPath + File.separator + "tmp");
 
         if (tempDir.exists()) {
             FileUtils.deleteDirectory(tempDir);
@@ -168,7 +168,7 @@ public class VideoGenerator {
 
         String c = "-y -i " + inputFile.getAbsolutePath() +
                 " -strict experimental -r 30 -qscale 1 -f image2 -vcodec mjpeg " +
-                filesDirPath + File.separator + "tpm" + File.separator + "%03d.jpg";
+                filesDirPath + File.separator + "tmp" + File.separator + "%03d.jpg";
 
         String[] cmd = c.split(" ");
         try {
@@ -190,7 +190,7 @@ public class VideoGenerator {
 
                 @Override
                 public void onSuccess(String message) {
-                    File imagesDirectory = new File(filesDirPath + File.separator + "tpm");
+                    File imagesDirectory = new File(filesDirPath + File.separator + "tmp");
                     reverseImagesOrder(imagesDirectory, handler);
                     assembleVideo(imagesDirectory, handler);
                 }
@@ -228,8 +228,11 @@ public class VideoGenerator {
 
     public void assembleVideo(final File inputDirectory, final VideoGeneratorListener handler) {
         FFmpeg ffmpeg = FFmpeg.getInstance(this.mContext);
-
-        final File assembledVideo = new File(inputDirectory.getAbsolutePath() + File.separator + "final.mp4");
+        File containingFolder = new File(inputDirectory.getAbsolutePath() + File.separator + "generated");
+        if (!containingFolder.exists()) {
+            containingFolder.mkdir();
+        }
+        final File assembledVideo = new File(containingFolder.getAbsolutePath() + File.separator + "final.mp4");
 
         String c = "-y -f image2 -i " + inputDirectory.getAbsolutePath() + File.separator +
                 "%03d.jpg -r 30 -vcodec mpeg4 -b:v 2100k " +

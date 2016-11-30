@@ -155,7 +155,7 @@ public class FrontCameraSurfaceView extends TextureView implements TextureView.S
             mCamera.setPreviewTexture(surface);
             mCamera.startPreview();
 
-        } catch (IOException ioe) {
+        } catch (Exception exception) {
             Log.d(TAG, "Error");
         }
     }

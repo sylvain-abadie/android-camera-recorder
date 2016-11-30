@@ -92,7 +92,6 @@ public class FrontCameraPreviewActivity extends AppCompatActivity implements Cam
 
                 } else {
                     // TODO : display an error view
-
                 }
             }
         }
@@ -167,6 +166,7 @@ public class FrontCameraPreviewActivity extends AppCompatActivity implements Cam
         Intent intent = new Intent(FrontCameraPreviewActivity.this, VideoPreviewActivity.class);
         intent.putExtra(VideoPreviewActivity.VIDEO_PATH, generatedFile.getAbsolutePath());
         startActivity(intent);
+        recreate();
     }
 
     @Override

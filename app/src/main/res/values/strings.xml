@@ -3,4 +3,6 @@
     <string name="action_settings">Settings</string>
     <string name="camera_not_available">Camera is not available</string>
     <string name="send_to">Share the video !</string>
+    <string name="subject">My Subject</string>
+    <string name="description">My Text</string>
 </resources>
