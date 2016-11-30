@@ -103,19 +103,23 @@ public class VideoPreviewActivity extends Activity {
             public void onClick(View v) {
                 mIsPlaying = false;
                 setPlayingStreamingMediaPlayer(mIsPlaying);
-                File video = new File(mVideoPath);
-                Uri contentUri = FileProvider.getUriForFile(VideoPreviewActivity.this, "sample.com.fileprovider", video);
-                Intent shareIntent = new Intent();
-                shareIntent.setAction(Intent.ACTION_SEND);
-                shareIntent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                shareIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, getString(R.string.subject));
-                shareIntent.putExtra(android.content.Intent.EXTRA_TEXT, getString(R.string.description));
-                shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
-                shareIntent.setType(VIDEO_MIME_TYPE);
-                startActivity(Intent.createChooser(shareIntent, getResources().getText(R.string.send_to)));
+                shareVideo();
             }
         });
 
+    }
+
+    public void shareVideo(){
+        File video = new File(mVideoPath);
+        Uri contentUri = FileProvider.getUriForFile(VideoPreviewActivity.this, "sample.com.fileprovider", video);
+        Intent shareIntent = new Intent();
+        shareIntent.setAction(Intent.ACTION_SEND);
+        shareIntent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        shareIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, getString(R.string.subject));
+        shareIntent.putExtra(android.content.Intent.EXTRA_TEXT, getString(R.string.description));
+        shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
+        shareIntent.setType(VIDEO_MIME_TYPE);
+        startActivity(Intent.createChooser(shareIntent, getResources().getText(R.string.send_to)));
     }
 
     private Size getVideoSize(String videoSource) {
@@ -155,16 +159,6 @@ public class VideoPreviewActivity extends Activity {
         super.onResume();
         create();
 
-    }
-
-    /**
-     * Called when the activity is about to be destroyed.
-     */
-    @Override
-    protected void onDestroy() {
-        shutdown();
-        mCreated = false;
-        super.onDestroy();
     }
 
     /**
