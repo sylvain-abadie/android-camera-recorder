@@ -145,6 +145,8 @@ public class VideoPreviewActivity extends Activity {
     protected void onPause() {
         mIsPlaying = false;
         setPlayingStreamingMediaPlayer(mIsPlaying);
+        shutdown();
+        mCreated = false;
         super.onPause();
     }
 

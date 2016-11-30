@@ -52,4 +52,11 @@ public class FileUtils {
         }
         fileOrDirectory.delete();
     }
+
+    public static void createDirIfNeeded(String dirPath){
+        File file = new File(dirPath);
+        if(!file.exists()){
+            file.mkdirs();
+        }
+    }
 }

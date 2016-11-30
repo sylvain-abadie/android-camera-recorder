@@ -21,10 +21,10 @@ import java.io.File;
 
 import sample.com.frontcamerarecorder.R;
 import sample.com.frontcamerarecorder.controllers.CameraController;
-import sample.com.frontcamerarecorder.controllers.VideoGenerator;
+import sample.com.frontcamerarecorder.controllers.ffmpegvideogenerator.FFMpegVideoGenerator;
 import sample.com.frontcamerarecorder.ui.views.FrontCameraSurfaceView;
 
-public class FrontCameraPreviewActivity extends AppCompatActivity implements CameraController.CameraRecordListener, VideoGenerator.VideoGeneratorListener {
+public class FrontCameraPreviewActivity extends AppCompatActivity implements CameraController.CameraRecordListener, FFMpegVideoGenerator.VideoGeneratorListener {
     public final static String TAG = "FrontCameraPreviewAct";
 
     private final static int CAMERA_PERMISSION_REQUEST_CODE = 50;
@@ -51,9 +51,9 @@ public class FrontCameraPreviewActivity extends AppCompatActivity implements Cam
 
         hideCameraFab = AnimationUtils.loadAnimation(getApplication(), R.anim.fade_out);
         hideCameraFab.setAnimationListener(new Animation.AnimationListener() {
+
             @Override
             public void onAnimationStart(Animation animation) {
-
             }
 
             @Override
@@ -63,7 +63,6 @@ public class FrontCameraPreviewActivity extends AppCompatActivity implements Cam
 
             @Override
             public void onAnimationRepeat(Animation animation) {
-
             }
         });
         mPbProcessing = (ProgressBar) findViewById(R.id.pb_processing);
@@ -125,40 +124,51 @@ public class FrontCameraPreviewActivity extends AppCompatActivity implements Cam
             if (mCameraController.getCamera() == null) {
                 Toast.makeText(this, R.string.camera_not_available, Toast.LENGTH_SHORT).show();
                 // TODO : display an error view
-            } else if(mPreview==null) {
+            } else if (mPreview == null) {
                 mPreview = new FrontCameraSurfaceView(this, mCameraController.getCamera(), CameraController.getFrontCameraInfo());
                 mPreviewFrame.addView(mPreview);
-            }else{
+            } else {
                 // handle the onResume after background properly
                 mPreview.setCamera(mCameraController.getCamera());
             }
-        }else{
+        } else {
             mCameraController.getCamera();
         }
     }
 
 
     @Override
-    public void onCameraRecordSuccess(File file) {
-        Log.d(TAG,"onCameraRecordSucess");
+    public void onCameraRecordSuccess(final File file) {
         this.runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 fab.setVisibility(View.GONE);
                 mCameraController.release();
                 mPreviewFrame.removeAllViews();
-                mCameraController=null;
+                mCameraController = null;
                 mPbProcessing.setVisibility(View.VISIBLE);
             }
         });
-        VideoGenerator generator = new VideoGenerator(this.getApplication());
-        generator.convert(file,this);
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Log.d(TAG, "start");
+                FFMpegVideoGenerator generator = new FFMpegVideoGenerator(FrontCameraPreviewActivity.this.getApplication());
+                generator.setVideoGeneratorListener(FrontCameraPreviewActivity.this);
+                generator.convert(file);
+            }
+        }).start();
+
     }
 
     @Override
     public void onCameraRecordFailure() {
-        // TODO : display an error view
-        Toast.makeText(FrontCameraPreviewActivity.this, R.string.camera_not_available, Toast.LENGTH_SHORT).show();
+        this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(FrontCameraPreviewActivity.this, R.string.camera_not_available, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     @Override
@@ -171,6 +181,6 @@ public class FrontCameraPreviewActivity extends AppCompatActivity implements Cam
 
     @Override
     public void onVideoGeneratedError(String message) {
-
+        Log.e(TAG, message);
     }
 }
